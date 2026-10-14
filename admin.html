@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1f7a4d">
+<title>إدارة المنتجات</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap">
+<style>
+:root{--bg:#f6f5ef;--card:#fff;--ink:#1d2b24;--mute:#6b766f;--line:#e2e0d5;--green:#1f7a4d;--onGreen:#fff;--tag:#ffd23f;--red:#c0392b}
+@media (prefers-color-scheme:dark){:root{--bg:#14201a;--card:#1d2c24;--ink:#eef2ee;--mute:#9fb0a5;--line:#2c3f35;--green:#3fb97a;--onGreen:#08140d;--red:#ff7b6b}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Cairo",system-ui,Tahoma,sans-serif;font-size:16px;line-height:1.5;padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}
+.wrap{max-width:640px;margin:0 auto;padding:12px 14px 60px}
+h1{font-size:20px;font-weight:800;margin:6px 0}
+.top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin:12px 0}
+.card label{display:block;font-size:14px;font-weight:600;margin:8px 0 4px}
+.row{display:flex;gap:8px;align-items:center}
+input[type=text],input[type=number],input[type=search],input[type=password]{flex:1;min-width:0;width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font:inherit}
+input:focus-visible,button:focus-visible{outline:3px solid var(--tag);outline-offset:1px}
+.btn{padding:11px 16px;border:0;border-radius:10px;background:var(--green);color:var(--onGreen);font:inherit;font-weight:600;cursor:pointer}
+.btn.alt{background:var(--card);color:var(--ink);border:1px solid var(--line)}
+.btn.del{background:transparent;color:var(--red);border:1px solid var(--line)}
+.btn.sm{padding:6px 10px;font-size:14px}
+.btn:disabled{opacity:.5;cursor:default}
+.sub{font-size:13px;color:var(--mute)}
+.msg{font-size:14px;color:var(--mute);margin:6px 0;min-height:21px}
+.msg.err{color:var(--red)}
+.item{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;margin-top:8px}
+.info{flex:1;min-width:0}
+.name{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.price{font-weight:800;white-space:nowrap}
+.empty{text-align:center;color:var(--mute);padding:28px 8px}
+#readerBox{display:none;margin:8px 0;border:1px solid var(--line);border-radius:12px;padding:8px;background:var(--card)}
+#toast{position:fixed;inset-inline:14px;bottom:calc(14px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:12px 14px;border-radius:12px;display:none;z-index:60;text-align:center}
+#toast.err{background:var(--red);color:#fff}
+.mdl{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50}
+.mdl .box{background:var(--card);border-radius:14px;padding:16px;width:100%;max-width:360px}
+.mdl .box>*+*{margin-top:12px}
+.hide{display:none!important}
+.foot{display:flex;gap:14px;justify-content:center;margin-top:24px}
+.foot button{background:none;border:0;color:var(--mute);font:inherit;text-decoration:underline;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><h1>إدارة المنتجات</h1><span class="sub" id="sync"></span></div>
+
+  <section id="vSetup" class="hide">
+    <div class="card">
+      <b>ربط التطبيق بالجدول</b>
+      <div class="sub">الصق رابط السيرفر اللي وصلك (بيبدأ بـ https://script.google.com).</div>
+      <label for="uIn">رابط السيرفر</label>
+      <input id="uIn" type="text" dir="ltr" autocomplete="off">
+      <button class="btn" id="uSave" style="width:100%;margin-top:12px">حفظ ومتابعة</button>
+      <div class="msg" id="uMsg"></div>
+    </div>
+  </section>
+
+  <section id="vLogin" class="hide">
+    <div class="card">
+      <b>تسجيل الدخول</b>
+      <label for="pinIn">الرقم السري</label>
+      <input id="pinIn" type="password" inputmode="numeric" autocomplete="current-password">
+      <button class="btn" id="pinGo" style="width:100%;margin-top:12px">دخول</button>
+      <div class="msg" id="pinMsg"></div>
+    </div>
+  </section>
+
+  <section id="vMain" class="hide">
+    <div class="card">
+      <b id="formTitle">إضافة منتج</b>
+      <label for="pCode">كود المنتج</label>
+      <div class="row"><input id="pCode" type="text" inputmode="numeric" autocomplete="off"><button class="btn alt" id="scanBtn" style="flex:none">مسح</button></div>
+      <div id="readerBox"><div id="reader"></div></div>
+      <label for="pName">اسم المنتج</label>
+      <input id="pName" type="text" autocomplete="off">
+      <label for="pPrice">السعر (ج.م)</label>
+      <input id="pPrice" type="number" inputmode="decimal" min="0" step="0.01">
+      <div class="row" style="margin-top:12px">
+        <button class="btn" id="saveBtn" style="flex:1">حفظ المنتج</button>
+        <button class="btn alt hide" id="cancelBtn">إلغاء</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row" style="flex-wrap:wrap">
+        <button class="btn alt" id="impBtn" style="flex:1">استيراد من ملف</button>
+        <button class="btn alt" id="expBtn" style="flex:1">تصدير CSV</button>
+        <button class="btn alt" id="refBtn" style="flex:1">تحديث</button>
+      </div>
+      <div class="sub" style="margin-top:6px">الاستيراد يقبل Excel أو CSV أو JSON، بأعمدة: كود، اسم، سعر.</div>
+      <input id="impFile" type="file" accept=".xlsx,.xls,.csv,.json" class="hide">
+    </div>
+
+    <input id="search" type="search" placeholder="ابحث بالاسم أو الكود">
+    <div class="sub" id="count" style="margin-top:6px"></div>
+    <div id="plist"></div>
+    <div class="foot"><button id="logout">تسجيل خروج</button><button id="relink">تغيير رابط السيرفر</button></div>
+  </section>
+</div>
+
+<div id="toast" role="status"></div>
+<div class="mdl hide" id="mdl"><div class="box"><div id="mMsg"></div><div class="row" id="mBtns"></div></div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+(function(){
+  var $=function(i){return document.getElementById(i)};
+  function lget(k){try{return localStorage.getItem(k)||''}catch(e){return ''}}
+  function lset(k,v){try{if(v)localStorage.setItem(k,v);else localStorage.removeItem(k)}catch(e){}}
+  function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+  function money(n){return Number(n).toLocaleString('ar-EG',{minimumFractionDigits:2,maximumFractionDigits:2})}
+
+  // رابط التفعيل: admin.html#u=<رابط السيرفر>
+  var m=location.hash.match(/[#&]u=([^&]+)/);
+  if(m){try{lset('ad_url',decodeURIComponent(m[1]))}catch(e){}history.replaceState(null,'',location.pathname+location.search)}
+
+  var S={url:lget('ad_url'),pin:lget('ad_pin'),products:[]},editing=null,busy=false,scanner=null,lastCode='',lastAt=0,tt=null;
+
+  function view(n){['vSetup','vLogin','vMain'].forEach(function(i){$(i).classList.toggle('hide',i!==n)})}
+  function toast(t,err){var e=$('toast');e.textContent=t;e.className=err?'err':'';e.style.display='block';clearTimeout(tt);tt=setTimeout(function(){e.style.display='none'},err?5000:2200)}
+  function setSync(t){$('sync').textContent=t}
+  function setBusy(b){busy=b;['saveBtn','impBtn','refBtn','expBtn'].forEach(function(i){$(i).disabled=b})}
+
+  function modal(msg,btns){return new Promise(function(res){
+    $('mMsg').textContent=msg;$('mBtns').innerHTML='';
+    function done(v){$('mdl').classList.add('hide');res(v)}
+    btns.forEach(function(b,i){var e=document.createElement('button');e.className='btn'+(i?' alt':'');e.style.flex='1';e.textContent=b[0];e.onclick=function(){done(b[1])};$('mBtns').appendChild(e)});
+    var c=document.createElement('button');c.className='btn alt';c.textContent='إلغاء';c.onclick=function(){done(null)};$('mBtns').appendChild(c);
+    $('mdl').classList.remove('hide');
+  })}
+
+  /* الاتصال بالسيرفر */
+  function req(opts){
+    var ctl=new AbortController(),t=setTimeout(function(){ctl.abort()},25000);
+    opts.signal=ctl.signal;
+    return fetch(opts.url,opts).then(function(r){return r.json()}).then(function(r){clearTimeout(t);if(!r||!r.ok)throw new Error(r&&r.error||'error');return r}).catch(function(e){clearTimeout(t);throw e});
+  }
+  function api(body){return req({url:S.url,method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({pin:S.pin},body))})}
+  function fetchList(){return req({url:S.url+(S.url.indexOf('?')>-1?'&':'?')+'action=list&_='+Date.now(),method:'GET'})}
+  function errText(e){
+    var s=e&&e.message||'';
+    if(s==='bad_pin')return 'الرقم السري غلط.';
+    if(e&&(e.name==='AbortError'||e.name==='TypeError'||s==='Failed to fetch'))return 'مفيش اتصال بالنت أو رابط السيرفر مش صح.';
+    return 'حصل خطأ: '+s;
+  }
+  function onErr(e){
+    if(e&&e.message==='bad_pin'){S.pin='';lset('ad_pin','');view('vLogin');$('pinMsg').textContent='الرقم السري غلط أو اتغيّر. ادخله تاني.';$('pinMsg').className='msg err';return}
+    toast(errText(e),true);
+  }
+
+  function apply(r){
+    S.products=r.products.map(function(a){return {c:a[0],n:a[1],p:a[2]}});
+    try{localStorage.setItem('ad_cache',JSON.stringify(r.products))}catch(e){}
+    render();setSync('محدّث '+new Date().toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'}));
+  }
+  function refresh(){setSync('جاري التحديث...');fetchList().then(apply).catch(function(e){setSync('نسخة محفوظة (مفيش اتصال)');if(e&&e.message!=='Failed to fetch'&&e.name!=='TypeError'&&e.name!=='AbortError')toast(errText(e),true)})}
+  function send(body,okMsg){
+    if(busy)return Promise.resolve();setBusy(true);setSync('جاري الحفظ...');
+    return api(body).then(function(r){apply(r);toast(okMsg+(r.skipped?' (تم تجاهل '+r.skipped+' صف ناقص)':''));return true}).catch(function(e){setSync('');onErr(e);return false}).then(function(ok){setBusy(false);return ok});
+  }
+
+  /* القائمة */
+  function render(){
+    var q=$('search').value.trim().toLowerCase();
+    var list=S.products.filter(function(p){return !q||p.n.toLowerCase().indexOf(q)>-1||p.c.indexOf(q)>-1});
+    var shown=list.slice(0,150);
+    $('count').textContent=S.products.length+' منتج'+(list.length>150?' (معروض أول 150، اكتب في البحث لتضييق النتائج)':'');
+    $('plist').innerHTML=shown.map(function(p){
+      return '<div class="item"><div class="info"><div class="name">'+esc(p.n)+'</div><div class="sub">كود: '+esc(p.c)+'</div></div><div class="price">'+money(p.p)+'</div><button class="btn alt sm" data-a="edit" data-c="'+esc(p.c)+'">تعديل</button><button class="btn del sm" data-a="del" data-c="'+esc(p.c)+'">حذف</button></div>'}).join('')||
+      '<div class="empty">'+(S.products.length?'مفيش نتائج للبحث.':'لسه مفيش منتجات. ضيف أول منتج من النموذج اللي فوق.')+'</div>';
+  }
+  $('search').oninput=render;
+  $('plist').addEventListener('click',function(e){
+    var b=e.target.closest('button');if(!b)return;var c=b.dataset.c,p=S.products.filter(function(x){return x.c===c})[0];if(!p)return;
+    if(b.dataset.a==='edit'){editing=c;$('pCode').value=p.c;$('pName').value=p.n;$('pPrice').value=p.p;$('formTitle').textContent='تعديل منتج';$('cancelBtn').classList.remove('hide');window.scrollTo({top:0,behavior:'smooth'})}
+    if(b.dataset.a==='del')modal('تمسح "'+p.n+'"؟',[['امسح',true]]).then(function(v){if(v)send({action:'delete',codes:[c]},'تم حذف المنتج.')});
+  });
+
+  /* نموذج الإضافة والتعديل */
+  function resetForm(){editing=null;$('pCode').value='';$('pName').value='';$('pPrice').value='';$('formTitle').textContent='إضافة منتج';$('cancelBtn').classList.add('hide')}
+  $('cancelBtn').onclick=resetForm;
+  $('saveBtn').onclick=function(){
+    var code=$('pCode').value.trim(),name=$('pName').value.trim(),price=parseFloat($('pPrice').value.replace(',','.'));
+    if(!code||!name||isNaN(price)||price<0){toast('لازم تكتب الكود والاسم والسعر.',true);return}
+    var dup=S.products.filter(function(p){return p.c===code})[0];
+    function go(){send({action:'upsert',items:[{code:code,name:name,price:price,old:editing}]},'تم حفظ: '+name).then(function(ok){if(ok)resetForm()})}
+    if(dup&&dup.c!==editing)modal('الكود ده موجود لمنتج "'+dup.n+'". تحدّث بياناته؟',[['تحديث',true]]).then(function(v){if(v)go()});
+    else go();
+  };
+  [$('pCode'),$('pName'),$('pPrice')].forEach(function(el){el.addEventListener('keydown',function(e){if(e.key==='Enter')$('saveBtn').click()})});
+
+  /* الكاميرا */
+  function stopScan(){var s=scanner;scanner=null;$('readerBox').style.display='none';$('scanBtn').textContent='مسح';if(s){s.stop().then(function(){s.clear()}).catch(function(){})}}
+  $('scanBtn').onclick=function(){
+    if(scanner){stopScan();return}
+    if(typeof Html5Qrcode==='undefined'){toast('مكتبة المسح مش متاحة. اكتب الكود يدويًا.',true);return}
+    $('readerBox').style.display='block';$('scanBtn').textContent='قفل';
+    var F=Html5QrcodeSupportedFormats;
+    scanner=new Html5Qrcode('reader',{formatsToSupport:[F.EAN_13,F.EAN_8,F.UPC_A,F.UPC_E,F.CODE_128,F.CODE_39,F.QR_CODE],experimentalFeatures:{useBarCodeDetectorIfSupported:true},verbose:false});
+    scanner.start({facingMode:'environment'},{fps:10,qrbox:{width:260,height:150}},function(t){
+      var n=Date.now();if(t===lastCode&&n-lastAt<1800)return;lastCode=t;lastAt=n;
+      $('pCode').value=t;stopScan();
+      var p=S.products.filter(function(x){return x.c===t})[0];
+      if(p){editing=p.c;$('pName').value=p.n;$('pPrice').value=p.p;$('formTitle').textContent='تعديل منتج';$('cancelBtn').classList.remove('hide');toast('المنتج موجود، تقدر تعدّله.')}
+      else{$('pName').focus();toast('تم التقاط الكود. اكتب الاسم والسعر.')}
+    },function(){}).catch(function(){stopScan();toast('الكاميرا مش شغالة. اسمح للمتصفح باستخدامها أو اكتب الكود يدويًا.',true)});
+  };
+
+  /* استيراد وتصدير */
+  function rowsToItems(rows){
+    rows=rows.filter(function(r){return r&&r.some(function(c){return String(c).trim()!==''})});
+    if(!rows.length)return [];
+    var ci=0,ni=1,pi=2,start=0;
+    if(isNaN(parseFloat(String(rows[0][2]==null?'':rows[0][2]).replace(',','.')))){
+      start=1;rows[0].forEach(function(x,i){x=String(x).toLowerCase();if(/code|كود|باركود/.test(x))ci=i;else if(/name|اسم|صنف/.test(x))ni=i;else if(/price|سعر/.test(x))pi=i});
+    }
+    var out=[];
+    for(var i=start;i<rows.length;i++){var r=rows[i];
+      var c=String(r[ci]==null?'':r[ci]).trim(),n=String(r[ni]==null?'':r[ni]).trim(),p=parseFloat(String(r[pi]==null?'':r[pi]).replace(',','.'));
+      if(c&&n&&isFinite(p)&&p>=0)out.push({code:c,name:n,price:p});
+    }
+    return out;
+  }
+  function parseFile(name,res){
+    if(/\.json$/.test(name)){
+      var d=JSON.parse(res),arr=Array.isArray(d)?d:d&&d.products;
+      if(!Array.isArray(arr))throw new Error('الملف ده مش فيه منتجات.');
+      return arr.map(function(p){return {code:String(p.code==null?'':p.code).trim(),name:String(p.name==null?'':p.name).trim(),price:Number(p.price)}}).filter(function(p){return p.code&&p.name&&isFinite(p.price)&&p.price>=0});
+    }
+    if(typeof XLSX==='undefined')throw new Error('مكتبة الإكسل مش متاحة. جرّب ملف CSV أو JSON.');
+    var wb=XLSX.read(res,{type:/\.csv$/.test(name)?'string':'array'});
+    var ws=wb.Sheets[wb.SheetNames[0]];
+    return rowsToItems(XLSX.utils.sheet_to_json(ws,{header:1,raw:false,defval:''}));
+  }
+  $('impBtn').onclick=function(){$('impFile').click()};
+  $('impFile').onchange=function(){
+    var f=this.files[0];this.value='';if(!f)return;
+    var name=f.name.toLowerCase(),r=new FileReader();
+    r.onerror=function(){toast('مقدرتش أقرا الملف.',true)};
+    r.onload=function(){
+      var items;try{items=parseFile(name,r.result)}catch(e){toast(e.message||'الملف مش مفهوم.',true);return}
+      if(!items.length){toast('مفيش منتجات صالحة في الملف.',true);return}
+      modal('لقيت '+items.length+' منتج في الملف. تدمجهم مع الموجود (الكود المتكرر بيتحدّث) ولا تستبدل كل المنتجات؟',[['دمج','upsert'],['استبدال الكل','replace']]).then(function(mode){if(mode)send({action:mode,items:items},'تم استيراد '+items.length+' منتج.')});
+    };
+    if(/\.(json|csv)$/.test(name))r.readAsText(f);else r.readAsArrayBuffer(f);
+  };
+  $('expBtn').onclick=function(){
+    if(!S.products.length){toast('مفيش منتجات للتصدير.',true);return}
+    var q=function(s){return '"'+String(s).replace(/"/g,'""')+'"'};
+    var csv='\ufeffcode,name,price\n'+S.products.map(function(p){return [q(p.c),q(p.n),p.p].join(',')}).join('\n');
+    var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='products.csv';document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},500);
+  };
+  $('refBtn').onclick=refresh;
+
+  /* الإعداد والدخول */
+  $('uSave').onclick=function(){
+    var v=$('uIn').value.trim();
+    if(!/^https:\/\/script\.google\.com\/(macros\/s\/|a\/)/.test(v)){$('uMsg').textContent='الرابط لازم يبدأ بـ https://script.google.com';$('uMsg').className='msg err';return}
+    S.url=v;lset('ad_url',v);view('vLogin');$('pinIn').focus();
+  };
+  $('pinGo').onclick=function(){
+    var pin=$('pinIn').value.trim();if(!pin)return;
+    $('pinGo').disabled=true;$('pinMsg').textContent='جاري التحقق...';$('pinMsg').className='msg';
+    S.pin=pin;
+    api({action:'check'}).then(function(){lset('ad_pin',pin);$('pinIn').value='';$('pinMsg').textContent='';view('vMain');loadCache();refresh()})
+      .catch(function(e){S.pin='';$('pinMsg').textContent=errText(e);$('pinMsg').className='msg err'})
+      .then(function(){$('pinGo').disabled=false});
+  };
+  $('pinIn').addEventListener('keydown',function(e){if(e.key==='Enter')$('pinGo').click()});
+  $('logout').onclick=function(){S.pin='';lset('ad_pin','');view('vLogin')};
+  $('relink').onclick=function(){modal('تغيّر رابط السيرفر؟ هتحتاج تدخل الرقم السري تاني.',[['تغيير',true]]).then(function(v){if(v){S.url='';S.pin='';lset('ad_url','');lset('ad_pin','');lset('ad_cache','');S.products=[];$('uIn').value='';view('vSetup')}})};
+
+  function loadCache(){try{var c=JSON.parse(lget('ad_cache')||'[]');S.products=c.map(function(a){return {c:a[0],n:a[1],p:a[2]}})}catch(e){S.products=[]}render()}
+
+  if(!S.url)view('vSetup');else if(!S.pin)view('vLogin');else{view('vMain');loadCache();refresh()}
+})();
+</script>
+</body>
+</html>
