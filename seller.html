@@ -15,7 +15,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:"Cairo",system-u
 .top{display:flex;justify-content:space-between;align-items:center;gap:8px}
 h1{font-size:20px;font-weight:800;margin:6px 0}
 .tabs{display:flex;gap:6px;margin:8px 0 12px}
-.tabs button{flex:1;padding:10px 4px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-weight:600;border-radius:10px;cursor:pointer}
+.tabs button{flex:1;padding:10px 4px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-weight:600;border-radius:10px;cursor:pointer;font-size:14px}
 .tabs button.on{background:var(--green);color:var(--onGreen);border-color:var(--green)}
 .row{display:flex;gap:8px;align-items:center}
 input[type=text],input[type=number],input[type=search],select{flex:1;min-width:0;width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font:inherit}
@@ -49,6 +49,9 @@ input:focus-visible,button:focus-visible,select:focus-visible{outline:3px solid 
 .mdl{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50}
 .mdl .box{background:var(--card);border-radius:14px;padding:16px;width:100%;max-width:360px}
 .mdl .box>*+*{margin-top:12px}
+.card-btn{background:var(--green);color:var(--onGreen);border:0;border-radius:12px;cursor:pointer;text-align:center;transition:transform 0.1s ease,opacity 0.1s ease;width:100%}
+.card-btn:active{transform:scale(0.98)}
+.card-btn.alt{background:var(--card);color:var(--ink);border:1px solid var(--line)}
 .hide{display:none!important}
 </style>
 </head>
@@ -68,9 +71,44 @@ input:focus-visible,button:focus-visible,select:focus-visible{outline:3px solid 
   </section>
 
   <div id="vApp" class="hide">
-    <div class="tabs"><button id="tCash" class="on">الحساب</button><button id="tPrice">الأسعار</button><button id="tSales">المبيعات</button></div>
+    <div class="tabs">
+      <button id="tHome" class="on">الرئيسية</button>
+      <button id="tCash">الحساب</button>
+      <button id="tPrice">الأسعار</button>
+      <button id="tSales">المبيعات</button>
+    </div>
 
-    <section id="cash">
+    <!-- الصفحة الرئيسية -->
+    <section id="home">
+      <div class="card" style="text-align:center; padding:18px; background: linear-gradient(135deg, var(--green), #145a32); color: var(--onGreen); border-radius: 14px; margin-bottom: 14px;">
+        <h2 style="margin:0 0 4px 0; font-size: 20px;">لوحة التحكم الرئيسية</h2>
+        <div style="font-size: 13px; opacity: 0.9;">اختر القسم للبدء سريعاً</div>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+        <button class="btn card-btn" id="goCash" style="padding: 20px 12px; display: flex; flex-direction: column; align-items: center; gap: 6px; height: auto;">
+          <span style="font-size: 26px;">🛒</span>
+          <b style="font-size: 15px;">فاتورة وحساب</b>
+          <span class="sub" style="color: inherit; opacity: 0.8; font-size: 11px;">إضافة منتجات وحساب الفاتورة</span>
+        </button>
+        <button class="btn card-btn alt" id="goPrice" style="padding: 20px 12px; display: flex; flex-direction: column; align-items: center; gap: 6px; height: auto;">
+          <span style="font-size: 26px;">🔍</span>
+          <b style="font-size: 15px;">السعر فقط</b>
+          <span class="sub" style="color: inherit; opacity: 0.8; font-size: 11px;">اعرف سعر منتج فوراً</span>
+        </button>
+      </div>
+      <div class="card" style="padding: 12px 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <b>سجل مبيعات اليوم</b>
+            <div class="sub">متابعة الفواتير المحفوظة</div>
+          </div>
+          <button class="btn alt sm" id="goSales">عرض المبيعات</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- قسم الحساب والفاتورة -->
+    <section id="cash" class="hide">
       <div class="row">
         <input id="codeIn" type="text" inputmode="numeric" placeholder="اكتب الكود واضغط إضافة" autocomplete="off">
         <button class="btn" id="addCode" style="flex:none">إضافة</button>
@@ -95,6 +133,7 @@ input:focus-visible,button:focus-visible,select:focus-visible{outline:3px solid 
       </div>
     </section>
 
+    <!-- قسم الأسعار -->
     <section id="price" class="hide">
       <button class="btn" id="scanBtn2" style="width:100%">امسح لمعرفة السعر</button>
       <div id="priceResult"></div>
@@ -103,6 +142,7 @@ input:focus-visible,button:focus-visible,select:focus-visible{outline:3px solid 
       <div id="plist"></div>
     </section>
 
+    <!-- قسم المبيعات -->
     <section id="sales" class="hide">
       <div class="card" style="margin-top:0">
         <div class="kv"><span>فواتير النهارده</span><b id="sCnt">0</b></div>
@@ -283,15 +323,25 @@ input:focus-visible,button:focus-visible,select:focus-visible{outline:3px solid 
 
   /* التبويبات والإعداد */
   function showTab(t){
-    ['cash','price','sales'].forEach(function(s){$(s).classList.toggle('hide',s!==t)});
-    $('tCash').classList.toggle('on',t==='cash');$('tPrice').classList.toggle('on',t==='price');$('tSales').classList.toggle('on',t==='sales');
+    ['home','cash','price','sales'].forEach(function(s){$(s).classList.toggle('hide',s!==t)});
+    $('tHome').classList.toggle('on',t==='home');
+    $('tCash').classList.toggle('on',t==='cash');
+    $('tPrice').classList.toggle('on',t==='price');
+    $('tSales').classList.toggle('on',t==='sales');
     $('totalbar').classList.toggle('hide',t!=='cash');
   }
+  $('tHome').onclick=function(){stopScan();showTab('home')};
   $('tCash').onclick=function(){stopScan();showTab('cash')};
   $('tPrice').onclick=function(){stopScan();showTab('price');renderPrices()};
   $('tSales').onclick=function(){stopScan();showTab('sales');renderSales()};
+
+  // أزرار الصفحة الرئيسية السريعة
+  $('goCash').onclick=function(){showTab('cash')};
+  $('goPrice').onclick=function(){showTab('price');renderPrices()};
+  $('goSales').onclick=function(){showTab('sales');renderSales()};
+
   function renderAll(){renderCart();renderPrices()}
-  function enter(){$('vSetup').classList.add('hide');$('vApp').classList.remove('hide');showTab('cash');
+  function enter(){$('vSetup').classList.add('hide');$('vApp').classList.remove('hide');showTab('home');
     S.products=(jget('sl_cache',[])).map(function(a){return {c:a[0],n:a[1],p:a[2]}});indexP();
     $('sync').textContent=S.products.length?'آخر تحديث '+tsText():'';renderAll();refresh()}
   $('uSave').onclick=function(){
@@ -299,7 +349,7 @@ input:focus-visible,button:focus-visible,select:focus-visible{outline:3px solid 
     if(!/^https:\/\/script\.google\.com\/(macros\/s\/|a\/)/.test(v)){say($('uMsg'),'الرابط لازم يبدأ بـ https://script.google.com',true);return}
     S.url=v;lset('sl_url',v);enter();
   };
-  $('relink').onclick=function(){modal('تغيّر رابط السيرفر؟ المنتجات المحفوظة على الموبايل هتتمسح، لكن الفواتير هتفضل.',{buttons:[['تغيير',true]]}).then(function(v){if(v){stopScan();S.url='';lset('sl_url','');lset('sl_cache','');S.products=[];indexP();cart={};saveCart();$('vApp').classList.add('hide');$('totalbar').classList.add('hide');$('vSetup').classList.remove('hide');$('uIn').value=''}})};
+  $('relink').onclick=function(){modal('تغيّر رابط السيرفر؟ المنتجات المحفوظة على الموبايل هتتمسح، لكن الفواتير هتفضل.',{buttons:[['تغيير',true]]}).then(function(v){if(v){stopScan();S.url='';lset('sl_url','');lset('sl_cache','');S.products=[];indexP();cart={};saveCart();$('vApp').classList.add('hide');$('totalbar').classList.add('hide');$('vSetup').classList.remove('hide');$('uIn'].value=''}})};
 
   if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})})}
   if(S.url)enter();else{$('vSetup').classList.remove('hide')}
